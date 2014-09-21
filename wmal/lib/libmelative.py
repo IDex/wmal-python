@@ -17,7 +17,7 @@
 from wmal.lib.lib import lib
 import wmal.utils as utils
 
-import urllib, urllib2
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse
 import json
 
 class libmelative(lib):
@@ -93,13 +93,13 @@ class libmelative(lib):
         
         self.username = account['username']
         
-        self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        self.password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         self.password_mgr.add_password("Melative", "melative.com:80", account['username'], account['password']);
         
-        self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
-        self.opener = urllib2.build_opener(self.handler)
+        self.handler = urllib.request.HTTPBasicAuthHandler(self.password_mgr)
+        self.opener = urllib.request.build_opener(self.handler)
         
-        urllib2.install_opener(self.opener)
+        urllib.request.install_opener(self.opener)
         
     def check_credentials(self):
         self.msg.info(self.name, 'Logging in...')
@@ -115,7 +115,7 @@ class libmelative(lib):
             self.userid = data['id']
 
             return True
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError("Incorrect credentials.")
     
     def fetch_list(self):
@@ -136,7 +136,7 @@ class libmelative(lib):
             
             # use appropiate number for the show state
             _status = 0
-            for k, v in statuses.items():
+            for k, v in list(statuses.items()):
                 if v.lower() == record['state']:
                     _status = k
             
@@ -174,7 +174,7 @@ class libmelative(lib):
         self.msg.info(self.name, 'Updating show %s...' % item['title'])
         
         changes = dict()
-        if self.media_info()['has_progress'] and 'my_progress' in item.keys():
+        if self.media_info()['has_progress'] and 'my_progress' in list(item.keys()):
             # We need to update the segment, so we call api/scrobble
             #values = dict()
             #values = {'attribute_type': _self.media_info['segment_type'],
@@ -187,27 +187,27 @@ class libmelative(lib):
             #    raise utils.APIError("Error scrobbling: " + str(e.code))
             changes['segment'] = "%s|%d" % (self.media_info()['segment_type'], item['my_progress'] )
 
-        if 'my_status' in item.keys():
+        if 'my_status' in list(item.keys()):
             changes['state'] = self.statuses_dict[item['my_status']]
 
-        if 'my_score' in item.keys():
+        if 'my_score' in list(item.keys()):
             changes['rating'] = item['my_score']
         
         data = self._urlencode(changes)
 
         try:
             response = self.opener.open("http://melative.com/api/scrobble.json", data)
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError("Error updating: " + str(e.code))
         
         return True
 
     def _urlencode(self, in_dict):
         out_dict = {}
-        for k, v in in_dict.iteritems():
+        for k, v in in_dict.items():
             out_dict[k] = v
-            if isinstance(v, unicode):
+            if isinstance(v, str):
                 out_dict[k] = v.encode('utf8')
             elif isinstance(v, str):
                 out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)
+        return urllib.parse.urlencode(out_dict)

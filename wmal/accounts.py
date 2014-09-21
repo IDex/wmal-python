@@ -1,5 +1,5 @@
-import utils
-import cPickle
+from . import utils
+import pickle
 
 class AccountManager(object):
     """
@@ -21,11 +21,11 @@ class AccountManager(object):
     def _load(self):
         if utils.file_exists(self.filename):
             with open(self.filename, 'rb') as f:
-                self.accounts = cPickle.load(f)
+                self.accounts = pickle.load(f)
 
     def _save(self):
         with open(self.filename, 'wb') as f:
-            cPickle.dump(self.accounts, f)
+            pickle.dump(self.accounts, f)
 
     def add_account(self, username, password, api):
         """
@@ -36,7 +36,7 @@ class AccountManager(object):
         found in the utils.available_libs dict.
         """
         
-        available_libs = utils.available_libs.keys()
+        available_libs = list(utils.available_libs.keys())
         
         if not username:
             raise utils.AccountError('Empty username.')
@@ -78,7 +78,7 @@ class AccountManager(object):
         """
         Returns an iterator of available accounts.
         """
-        return self.accounts['accounts'].iteritems()
+        return iter(self.accounts['accounts'].items())
 
     def get_default(self):
         """

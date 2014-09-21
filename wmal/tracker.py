@@ -22,8 +22,8 @@ import os
 from decimal import Decimal
 import difflib
 
-import messenger
-import utils
+from . import messenger
+from . import utils
 
 class AnimeInfoExtractor(object):
     """
@@ -81,7 +81,7 @@ class AnimeInfoExtractor(object):
         tags = {'video': ['H264', 'H.264', 'x264', 'XviD', 'DivX', 'MP4'],
             'audio': ['AC3', 'AAC', 'MP3', 'FLAC'],
             'source': ['TV', 'DVD', 'BluRay', 'BD', 'Blu-Ray', 'BDMV']}
-        for k, v in tags.iteritems():
+        for k, v in tags.items():
             for tag in v:
                 m = re.search('(?:[\(\[](?:|[^\)\]]*?[^0-9a-zA-Z\)\]]))(' + tag + ')(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
                 if m:

@@ -14,11 +14,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import cPickle
+import pickle
 import os.path
 
-import messenger
-import utils
+from . import messenger
+from . import utils
 
 import sys
 import threading
@@ -69,7 +69,7 @@ class Data(object):
             modulename = "wmal.lib.{0}".format(libname)
             __import__(modulename)
             apimodule = sys.modules[modulename]
-        except ImportError, e:
+        except ImportError as e:
             raise utils.DataFatal("Couldn't import API module: %s" % e.message)
         
         # Instance API
@@ -143,7 +143,7 @@ class Data(object):
                     # We don't want users losing their changes
                     self.process_queue()
                     self.download_data()
-                except utils.APIError, e:
+                except utils.APIError as e:
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
                     self._load_cache()
             elif not self.showlist:
@@ -152,7 +152,7 @@ class Data(object):
         else:
             try:
                 self.download_data()
-            except utils.APIError, e:
+            except utils.APIError as e:
                 raise utils.APIFatal(e.message)
  
         if self._info_exists():
@@ -244,7 +244,7 @@ class Data(object):
         key: The key that will be modified (it must exist beforehand)
         value: The value that it should be changed to
         """
-        if key not in show.keys():
+        if key not in list(show.keys()):
             raise utils.DataError('Invalid key for queue update.')
         
         # Do update on memory
@@ -348,7 +348,7 @@ class Data(object):
             #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
             
             # Run through queue
-            for i in xrange(len(self.queue)):
+            for i in range(len(self.queue)):
                 show = self.queue.pop(0)
                 showid = show['id']
                 
@@ -369,7 +369,7 @@ class Data(object):
                         self._emit_signal('show_synced', self.showlist[showid])
                     
                     self._emit_signal('queue_changed', len(self.queue))
-                except utils.APIError, e:
+                except utils.APIError as e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)
                     self.queue.append(show)
@@ -433,36 +433,36 @@ class Data(object):
 
     def _load_cache(self):
         self.msg.debug(self.name, "Reading cache...")
-        self.showlist = cPickle.load( open( self.cache_file , "rb" ) )
+        self.showlist = pickle.load( open( self.cache_file , "rb" ) )
     
     def _save_cache(self):
         self.msg.debug(self.name, "Saving cache...")
-        cPickle.dump(self.showlist, open( self.cache_file , "wb" ) )
+        pickle.dump(self.showlist, open( self.cache_file , "wb" ) )
     
     def _load_info(self):
         self.msg.debug(self.name, "Reading info DB...")
-        self.infocache = cPickle.load( open( self.info_file , "rb" ) )
+        self.infocache = pickle.load( open( self.info_file , "rb" ) )
     
     def _save_info(self):
         self.msg.debug(self.name, "Saving info DB...")
-        cPickle.dump(self.infocache, open( self.info_file , "wb" ) )
+        pickle.dump(self.infocache, open( self.info_file , "wb" ) )
 
     def _load_queue(self):
         self.msg.debug(self.name, "Reading queue...")
-        self.queue = cPickle.load( open( self.queue_file , "rb" ) )
+        self.queue = pickle.load( open( self.queue_file , "rb" ) )
     
     def _save_queue(self):
         self.msg.debug(self.name, "Saving queue...")
-        cPickle.dump(self.queue, open( self.queue_file , "wb" ) )
+        pickle.dump(self.queue, open( self.queue_file , "wb" ) )
 
     def _load_meta(self):
         self.msg.debug(self.name, "Reading metadata...")
-        loadedmeta = cPickle.load( open( self.meta_file , "rb" ) )
+        loadedmeta = pickle.load( open( self.meta_file , "rb" ) )
         self.meta.update(loadedmeta)
     
     def _save_meta(self):
         self.msg.debug(self.name, "Saving metadata...")
-        cPickle.dump(self.meta, open( self.meta_file , "wb" ) )
+        pickle.dump(self.meta, open( self.meta_file , "wb" ) )
         
     def download_data(self):
         """Downloads the remote list and overwrites the cache"""
@@ -472,7 +472,7 @@ class Data(object):
             # The API needs information to be merged from the
             # info database
             missing = []
-            for k, show in self.showlist.iteritems():
+            for k, show in self.showlist.items():
                 # Here we search the information in the local
                 # info database. If it isn't available, add it
                 # to the missing list for them to be requested

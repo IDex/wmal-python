@@ -19,12 +19,12 @@
 from wmal.lib.lib import lib
 import wmal.utils as utils
 
-import urllib, urllib2
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse
 import datetime
 import base64
 import gzip
 import xml.etree.ElementTree as ET
-from cStringIO import StringIO
+from io import BytesIO
 
 class libmal(lib):
     """
@@ -90,9 +90,9 @@ class libmal(lib):
         super(libmal, self).__init__(messenger, account, userconfig)
 
         self.username = account['username']
-        auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
+        auth_string = 'Basic ' + base64.b64encode('{}:{}'.format(account['username'], account['password']).encode('ascii')).decode('ascii').replace('\n', '')
 
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
 			('User-Agent', self.useragent),
 			('Authorization', auth_string),
@@ -101,7 +101,7 @@ class libmal(lib):
     def _request(self, url):
         try:
             return self.opener.open(url, timeout = 10)
-        except urllib2.URLError, e:
+        except urllib.error.URLError as e:
             raise utils.APIError("Connection error: %s" % e) 
 
     def _request_gzip(self, url):
@@ -112,13 +112,13 @@ class libmal(lib):
 
         """
         try:
-            request = urllib2.Request(url)
+            request = urllib.request.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
             compressed_data = self.opener.open(request)
-        except urllib2.URLError, e:
+        except urllib.error.URLError as e:
             raise utils.APIError("Connection error: %s" % e)
 
-        compressed_stream = StringIO(compressed_data.read())
+        compressed_stream = BytesIO(compressed_data.read())
         return gzip.GzipFile(fileobj=compressed_stream)
 
     def _make_parser(self):
@@ -127,19 +127,19 @@ class libmal(lib):
         # to convert these entities correctly.
         parser = ET.XMLParser()
         parser.parser.UseForeignDTD(True)
-        parser.entity['aacute'] = u'á'
-        parser.entity['eacute'] = u'é'
-        parser.entity['iacute'] = u'í'
-        parser.entity['oacute'] = u'ó'
-        parser.entity['uacute'] = u'ú'
-        parser.entity['lsquo'] = u'‘'
-        parser.entity['rsquo'] = u'’'
-        parser.entity['ldquo'] = u'“'
-        parser.entity['rdquo'] = u'“'
-        parser.entity['ndash'] = u'-'
-        parser.entity['mdash'] = u'—'
-        parser.entity['hellip'] = u'…'
-        parser.entity['alpha'] = u'α'
+        parser.entity['aacute'] = 'á'
+        parser.entity['eacute'] = 'é'
+        parser.entity['iacute'] = 'í'
+        parser.entity['oacute'] = 'ó'
+        parser.entity['uacute'] = 'ú'
+        parser.entity['lsquo'] = '‘'
+        parser.entity['rsquo'] = '’'
+        parser.entity['ldquo'] = '“'
+        parser.entity['rdquo'] = '“'
+        parser.entity['ndash'] = '-'
+        parser.entity['mdash'] = '—'
+        parser.entity['hellip'] = '…'
+        parser.entity['alpha'] = 'α'
         
         return parser
     
@@ -153,7 +153,7 @@ class libmal(lib):
             response = self._request(self.url + "account/verify_credentials.xml")
             self.logged_in = True
             return True
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError("Incorrect credentials.")
    
     def fetch_list(self):
@@ -178,9 +178,9 @@ class libmal(lib):
                 return self._parse_manga(root)
             else:
                 raise utils.APIFatal('Attempted to parse unsupported media type.')
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError("Error getting list.")
-        except IOError, e:
+        except IOError as e:
             raise utils.APIError("Error reading list: %s" % e.message)
     
     def add_show(self, item):
@@ -196,7 +196,7 @@ class libmal(lib):
         try:
             response = self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data)
             return True
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
         
     def update_show(self, item):
@@ -212,7 +212,7 @@ class libmal(lib):
         try:
             response = self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data)
             return True
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
     
     def delete_show(self, item):
@@ -223,7 +223,7 @@ class libmal(lib):
         try:
             response = self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
             return True
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
         
     def search(self, criteria):
@@ -237,7 +237,7 @@ class libmal(lib):
         # Load the results into XML
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
-        except (ET.ParseError, IOError), e:
+        except (ET.ParseError, IOError) as e:
             raise utils.APIError("Search error: %s" % repr(e.message))
         
         # Use the correct tag name for episodes
@@ -384,19 +384,19 @@ class libmal(lib):
             progressname = 'chapter'
         
         # Update necessary keys
-        if 'my_progress' in item.keys():
+        if 'my_progress' in list(item.keys()):
             episode = ET.SubElement(root, progressname)
             episode.text = str(item['my_progress'])
-        if 'my_status' in item.keys():
+        if 'my_status' in list(item.keys()):
             status = ET.SubElement(root, "status")
             status.text = str(item['my_status'])
-        if 'my_score' in item.keys():
+        if 'my_score' in list(item.keys()):
             score = ET.SubElement(root, "score")
             score.text = str(item['my_score'])
-        if 'my_start_date' in item.keys():
+        if 'my_start_date' in list(item.keys()):
             start_date = ET.SubElement(root, "date_start")
             start_date.text = self._date2str(item['my_start_date'])
-        if 'my_finish_date' in item.keys():
+        if 'my_finish_date' in list(item.keys()):
             finish_date = ET.SubElement(root, "date_finish")
             finish_date.text = self._date2str(item['my_finish_date'])
             
@@ -420,10 +420,10 @@ class libmal(lib):
     def _urlencode(self, in_dict):
         """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
         out_dict = {}
-        for k, v in in_dict.iteritems():
+        for k, v in in_dict.items():
             out_dict[k] = v
-            if isinstance(v, unicode):
+            if isinstance(v, str):
                 out_dict[k] = v.encode('utf8')
             elif isinstance(v, str):
                 out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)
+        return urllib.parse.urlencode(out_dict)

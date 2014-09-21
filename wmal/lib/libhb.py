@@ -19,7 +19,7 @@
 from wmal.lib.lib import lib
 import wmal.utils as utils
 
-import urllib, urllib2
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse
 import json
 
 class libhb(lib):
@@ -71,18 +71,18 @@ class libhb(lib):
         self.password = account['password']
 
         # Build opener with the mashape API key
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('X-Mashape-Authorization', self.mashape_auth)]
         
     def _request(self, url, get=None, post=None):
         if get:
-            url += "?%s" % urllib.urlencode(get)
+            url += "?%s" % urllib.parse.urlencode(get)
         if post:
-            post = urllib.urlencode(post)
+            post = urllib.parse.urlencode(post)
 
         try:
             return self.opener.open(self.url + url, post, 10)
-        except urllib2.URLError, e:
+        except urllib.error.URLError as e:
             raise utils.APIError("Connection error: %s" % e) 
    
     def check_credentials(self):
@@ -96,7 +96,7 @@ class libhb(lib):
             self.auth = response.strip('"')
             self.logged_in = True
             return True
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError("Incorrect credentials.")
    
     def fetch_list(self):
@@ -134,7 +134,7 @@ class libhb(lib):
 
             self._emit_signal('show_info_changed', infolist)
             return showlist
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError("Error getting list.")
     
     def add_show(self, item):
@@ -150,17 +150,17 @@ class libhb(lib):
         values = {'auth_token': self.auth}
 
         # Update necessary keys
-        if 'my_progress' in item.keys():
+        if 'my_progress' in list(item.keys()):
             values['episodes_watched'] = item['my_progress']
-        if 'my_status' in item.keys():
+        if 'my_status' in list(item.keys()):
             values['status'] = item['my_status']
-        if 'my_score' in item.keys():
+        if 'my_score' in list(item.keys()):
             values['rating'] = item['my_score']
 
         try:
             response = self._request("/libraries/%s" % item['id'], post=values)
             return True
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
     
     def delete_show(self, item):
@@ -172,7 +172,7 @@ class libhb(lib):
         try:
             response = self._request("/libraries/%s/remove" % item['id'], post=values)
             return True
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
     
     def search(self, query):
@@ -191,7 +191,7 @@ class libhb(lib):
                 
             self._emit_signal('show_info_changed', infolist)
             return infolist
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
         
     def _parse_info(self, show):
@@ -217,10 +217,10 @@ class libhb(lib):
     def _urlencode(self, in_dict):
         """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
         out_dict = {}
-        for k, v in in_dict.iteritems():
+        for k, v in in_dict.items():
             out_dict[k] = v
-            if isinstance(v, unicode):
+            if isinstance(v, str):
                 out_dict[k] = v.encode('utf8')
             elif isinstance(v, str):
                 out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)
+        return urllib.parse.urlencode(out_dict)
